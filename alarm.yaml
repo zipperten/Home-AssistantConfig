@@ -1,0 +1,22 @@
+# --------------- Larm ----------------
+- id: action-4100
+  alias: pushmeddelande och TTS, övrsvamning Kök diskho
+  trigger:
+  - platform: time_pattern
+    seconds: /15
+  condition:
+  - condition: state
+    entity_id: sensor.entreplan_kok_diskho_vattensensor
+    state: '2'
+  action:
+  - service: media_player.volume_set
+    data:
+      entity_id: "all"
+      volume_level: '0.50'
+
+  - service: tts.google_say
+    entity_id: "all"
+    data_template:
+      message: >
+        '{{ ["Översvämningslarm!.!. Översvämningslarm!.!. Kontrollera vatten kopplingar under diskbänken!!.."] | random }}'
+      language: 'sv'

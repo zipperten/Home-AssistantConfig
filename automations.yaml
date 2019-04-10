@@ -1,0 +1,472 @@
+#  ----ID Nummer Förklaring 1234
+#  ----1=Funktion  2=Våning  3-4=Löpnummer
+#
+#  Uppdelning
+#  - Belysning 1xxx
+#  - automationer 2xxx
+#  - Notificationer/Upplysningar 3xxx
+#  - Larm 4xxx
+#    - Källaren x1xx
+#    - EntrePlan x2xx
+#    - SovPlan x3xx
+#    - Vinden x4xx
+
+# ----------------------------- Belysning Källaren -----------------
+
+# ----Källaren Förråd Belysning
+- id: action-1100
+  alias: Auto släck källar belysning
+  trigger:
+  - entity_id: binary_sensor.kallar_forrad
+    platform: state
+    to: 'off'
+    for:
+      minutes: '10'
+  condition:
+  action:
+    data:
+      entity_id: switch.kallarforad_taklampa
+    service: switch.turn_off
+
+- id: action-1101
+  alias: Auto tänd belyning källar förråd
+  trigger:
+  - entity_id: binary_sensor.kallar_forrad
+    platform: state
+    to: 'on'
+
+  - entity_id: binary_sensor.pir2_kallar_forrad
+    platform: state
+    to: 'on'
+
+  condition:
+  action:
+  - alias: Turn on lampa in kallar forad when movement
+    data:
+      entity_id: switch.kallarforad_taklampa
+    service: switch.turn_on
+
+
+# ----Källaren Teknikrummet Belsyning
+- id: action-1102
+  alias: "Auto släck teknikrumsbelysning med rörelesensor"
+  trigger:
+  - entity_id: binary_sensor.ir_teknikrum
+    platform: state
+    to: 'off'
+    for:
+      minutes: '30'
+
+  condition:
+  action:
+  - alias: Slack Kallar Bel
+    data:
+      entity_id: switch.teknikrum_taklampa
+    service: switch.turn_off
+
+- id: action-1103
+  alias: "Auto tänd i teknikrum"
+  trigger:
+  - entity_id: binary_sensor.ir_teknikrum
+    platform: state
+    to: 'on'
+
+  condition:
+  action:
+  - alias: "Auto tänd källarforråd"
+    data:
+      entity_id: switch.teknikrum_taklampa
+    service: switch.turn_on
+
+# -------------------- Belysning EntrePlan --------------------
+
+# ----Matsal Ljuskrona Belysning
+- id: action-1200
+
+  alias: "Auto släck Matsalslampa när ingen är i rummet"
+  trigger:
+  - entity_id: binary_sensor.ir_matsal
+    platform: state
+    to: 'off'
+    for:
+      minutes: '60'
+  condition:
+  action:
+  - service: light.turn_off
+    data:
+      entity_id: light.matsal_ljuskrona
+      transition: '10'
+
+- id: action-1201
+  alias: "Auto tänd matsalslampa vid rörelse "
+  trigger:
+  - entity_id: binary_sensor.ir_matsal
+    platform: state
+    to: 'on'
+  condition:
+  - condition: sun
+    after: sunset
+    after_offset: "-00:30:00"
+
+  - condition: state
+    entity_id: light.matsal_ljuskrona
+    state: 'off'
+
+  action:
+  - service: light.turn_on
+    data:
+      entity_id: light.matsal_ljuskrona
+      brightness: '150'
+      transition: '10'
+
+# -------------------- Belsyning Sovplan --------------------
+
+# --Auto Aläckning sovplan Ljuskrona
+- id: action-1300
+  alias: "Auto släck hall ljus sovplan"
+  trigger:
+  -  platform: sun
+     event: 'sunrise'
+  condition:
+  - condition: state
+    entity_id: binary_sensor.ir_trapp_sovplan
+    state: 'off'
+    for:
+      minutes: '5'
+  action:
+  - service: light.turn_off
+    data:
+      entity_id: light.sovplan_ljuskrona
+      transition: '5'
+
+# --Auto dmmning sovplan hall ljuskrona
+- id: action-1301
+  alias: "Auto dimma hall ljus sovplan"
+  trigger:
+  - entity_id: binary_sensor.ir_trapp_sovplan
+    platform: state
+    to: 'off'
+    for:
+      minutes: '5'
+  condition:
+  - condition: sun
+    after: sunset
+    after_offset: "-00:60:00"
+
+  action:
+  - service: light.turn_on
+    data:
+      entity_id: light.sovplan_ljuskrona
+      brightness_pct: '30'
+#      brightness: '85'
+      transition: '5'
+
+# --Auto Tändning sovplan ljuskrona
+- id: action-1302
+  alias: "Auto tänd hall ljus sovplan"
+  trigger:
+  - entity_id: binary_sensor.ir_trapp_sovplan
+    platform: state
+    to: 'on'
+
+  condition:
+  - condition: sun
+    after: sunset
+    after_offset: "-00:60:00"
+
+  action:
+  - service: light.turn_on
+    data:
+      entity_id: light.sovplan_ljuskrona
+      brightness: '105'
+      transition: '1'
+
+# ----Jacob & Ylvas rum
+- id: action-1303
+  alias: Auto släck JoY LED efter 60min utan rörelse
+  trigger:
+  - entity_id: binary_sensor.ir_sov_jacob_ylva
+    platform: state
+    to: 'off'
+    for:
+      minutes: '60'
+  condition:
+  action:
+  - alias: Slack Joy LED
+    data:
+      entity_id: switch.jacoboylvasrum_ledlist
+    service: switch.turn_off
+
+
+# --------------- Belysning Vinden----------------
+
+# ----Allmänbelysning Vind
+- id: action-1400
+  alias: Auto släck vinden belysning
+  trigger:
+  - entity_id: binary_sensor.ir_vind
+    platform: state
+    to: 'off'
+    for:
+      minutes: '30'
+  condition:
+  action:
+  - service: light.turn_off
+    data:
+      entity_id: light.vinden
+      brightness: '200'
+
+- id: action-1401
+  alias: Auto tänd belyning nattetid vinden
+  trigger:
+  - entity_id: binary_sensor.ir_vind
+    platform: state
+    to: 'on'
+
+  condition:
+    condition: and
+    conditions:
+      - condition: sun
+        after: sunset
+        after_offset: "-00:60:00"
+
+      - condition: state
+        entity_id: light.vinden
+        state: 'off'
+
+  action:
+  - service: light.turn_on
+    data:
+      entity_id: light.vinden
+      brightness: '50'
+      transition: '3'
+
+
+# ----------------- Autsomationer ----------------
+
+# ----Espressomaskin Av/På
+- alias: "Auto, Slå på espressomaskin"
+  trigger:
+    - platform: time
+      at: '05:00:00'
+  action:
+    - service: homeassistant.turn_on
+      data:
+        entity_id: switch.kok_espressomaskin
+# --Av
+- alias: "Auto, Slå av Espressomaskin"
+  trigger:
+    - platform: time
+      at: '19:30:00'
+  action:
+    - service: homeassistant.turn_off
+      data:
+        entity_id: switch.kok_espressomaskin
+
+# ----Håll Entredörr olåst när den är öppen
+- alias: "Håll dörr öppen"
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.mk_huvudentre
+      to: 'on'
+
+  action:
+    - service: homeassistant.turn_on
+      data:
+        entity_id: switch.oppna_entredorr
+
+
+- alias: "Håll dörr öppen resett"
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.mk_huvudentre
+      to: 'off'
+      for:
+        seconds: '1'
+  action:
+    - service: homeassistant.turn_off
+      data:
+        entity_id: switch.oppna_entredorr
+
+
+
+# ------------------Notifieringar------------------------
+
+# ----Dorrar Varning vid uppregling-----
+# --Koket
+- id: action-3200
+  alias: "Ljudmeddelande, Varna vid oppen matsalsdorr."
+  trigger:
+  - entity_id: binary_sensor.ir_kok
+    platform: state
+    to: 'on'
+
+  condition:
+    condition: state
+    entity_id: binary_sensor.mk_alltan_matsal
+    state: 'on'
+    for:
+      minutes: '5'
+
+  action:
+    - service: media_player.volume_set
+      data:
+        entity_id: media_player.matsal
+        volume_level: '0.40'
+
+    - service: tts.google_say
+      entity_id: media_player.matsal
+      data_template:
+        message: >
+          '{{ ["Stang koks altandorren, det blir kallt", "Du har vadrat i over 5 minuter, stang koks dorren.", "Stang till koks dorren", "Halla det blir kallt om du har oppet", "Stang koks dorren", "Koks dorren ar oppen, stang den!"] | random }}'
+        language: 'sv'
+
+# --Entre
+- id: action-3201
+  alias: "Ljudmeddelande, Varna vid oppen entredorr"
+  trigger:
+  - entity_id: binary_sensor.ir_huvudentre
+    platform: state
+    to: 'on'
+  condition:
+    condition: state
+    entity_id: binary_sensor.mk_huvudentre
+    state: 'on'
+    for:
+      minutes: '5'
+  action:
+    - service: media_player.volume_set
+      data:
+        entity_id: media_player.sallskapsrum
+        volume_level: '0.40'
+
+    - service: tts.google_say
+      entity_id: media_player.sallskapsrum
+      data_template:
+        message: >
+          '{{ ["Stang entre dorren, det blir kallt", "Du har vadrat i over 5 minuter, stang entre dorren.", "Stang till entre dorren", "Halla det blir kallt om du har oppet", "Stang entre dorren", "entre dorren ar oppen, stang den!"] | random }}'
+        language: 'sv'
+
+# -- Balkongdorr orangeri baksida Entreplan
+- id: action-3202
+  alias: "Ljudmeddelande, Varna vid öppen bakre balkongdörr"
+  trigger:
+  - entity_id: binary_sensor.ir_huvudentre
+    platform: state
+    to: 'on'
+
+  condition:
+    condition: state
+    entity_id:   binary_sensor.mk_altan_baksida
+    state: 'on'
+    for:
+      minutes: '5'
+
+  action:
+    - service: media_player.volume_set
+      data:
+        entity_id: media_player.sallskapsrum
+        volume_level: '0.40'
+
+    - delay: 0:0:010
+
+    - service: tts.google_say
+      entity_id: media_player.sallskapsrum
+      data_template:
+        message: >
+          '{{ ["Stang bakre altandorren, det blir kallt", "Du har vadrat i over 5 minuter, stang bakre altandorren.", "Stang till bakre altandorren", "Halla det blir kallt om du har oppet", "Stang bakre altandorren", "bakre altandorren ar oppen, stang den!"] | random }}'
+        language: 'sv'
+
+# --------------Ding Dong Entredörr -----------------
+- id: action-3203
+  alias: "Pushmeddelande, ding dong entredörr"
+  trigger:
+  - entity_id:  binary_sensor.mk_huvudentre
+    platform: state
+    to: 'on'
+
+  condition:
+    condition: state
+    entity_id: device_tracker.oneplus_3t_daniel
+    state: 'home'
+
+  action:
+    service: notify.pushbullet
+    data_template:
+      title: Entredorr oppnad
+      message: Nagon kom hem eller gick.
+      target:
+#      - device/Telefon
+      - channel/Folkhemmet
+      - email/daniel@zippert.se
+
+#      data:
+#        file_url:  https://cdn.pixabay.com/photo/2014/06/03/19/38/test-361512_960_720.jpg
+
+# --Daniels Rum
+- id: action-3300
+  alias: "Ljudmeddelande, Varna vid oppen dorr Daniels Rum."
+  trigger:
+  - entity_id: binary_sensor.ir_sov_daniel
+    platform: state
+    to: 'on'
+
+  condition:
+    condition: state
+    entity_id:  binary_sensor.mk_sov_daniel
+    state: 'on'
+    for:
+      minutes: '5'
+
+  action:
+    - service: media_player.volume_set
+      data:
+        entity_id: media_player.danielsrum
+        volume_level: '0.50'
+
+    - service: tts.google_say
+      entity_id: media_player.danielsrum
+      data_template:
+        message: >
+          '{{ ["Stang dorren, det blir kallt", "Du har vadrat i over 5 minuter, stang dorren, stang dorren.", "Stang till dorren", "Halla det blir kallt om du har oppet", "Stang dorren", "Dorren ar oppen, stang till den!"] | random }}'
+        language: 'sv'
+
+
+
+# --------------- Larm ----------------
+- id: action-4100
+  alias: pushmeddelande och TTS, övrsvamning Kök diskho
+  trigger:
+  - platform: time_pattern
+    seconds: /15
+  condition:
+  - condition: state
+    entity_id: sensor.entreplan_kok_diskho_vattensensor
+    state: '2'
+  action:
+  - service: media_player.volume_set
+    data:
+      entity_id: "all"
+      volume_level: '0.50'
+
+  - service: tts.google_say
+    entity_id: "all"
+    data_template:
+      message: >
+        '{{ ["Översvämningslarm!.!. Översvämningslarm!.!. Kontrollera vatten kopplingar under diskbänken!!.."] | random }}'
+      language: 'sv'
+
+- id: action-4101
+  alias: "Pushmeddelande, Lågt batter översvämningssensor Bastu"
+  trigger:
+    platform: numeric_state
+    entity_id: sensor.batt_floodsensor1
+    below: '5'
+  action:
+    service: notify.pushbullet
+    data_template:
+      title: 'Lagt Batteri:'
+      message: Batteri i Fibaro Floodseneor Bastu ar under 5% {{now().strftime("%Y-%m-%d %H:%M")}}
+      target:
+      - device/Telefon
+      - channel/folkhemmet
